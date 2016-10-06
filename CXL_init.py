@@ -88,6 +88,12 @@ def initCXLVars (CXL_vars) :
         help = 'Specify Boost headers directory to use',
         default = '',)
 
+    # Support for specifying location of GPU Profiler Backend
+    CXL_vars.Add(
+        key = 'CXL_gpu_profiler_backend_dir',
+        help = 'Specify location of GPU Profiler Backend Source Dir',
+        default = '',)
+
 def initJava (env) :
     useJava = os.getenv('JAVA_HOME', '')
     if (useJava != ''):
@@ -233,27 +239,29 @@ def initCompilerFlags (env) :
 def initImages (env) :
     images = []
     imgSrcDir = env['CXL_common_dir'] + "/../CodeXL/Images"
-    imgSrcFiles = os.listdir(imgSrcDir)
-    for f in imgSrcFiles:
-        images.append(imgSrcDir+ "/" + f)
+    if os.path.exists(imgSrcDir):
+        imgSrcFiles = os.listdir(imgSrcDir)
+        for f in imgSrcFiles:
+            images.append(imgSrcDir+ "/" + f)
 
-    images_install = env.Install(
-        dir = env['CXL_Images_dir'],
-        source =  images)
-    env.Append (CXL_Images_install = images_install)
+        images_install = env.Install(
+            dir = env['CXL_Images_dir'],
+            source =  images)
+        env.Append (CXL_Images_install = images_install)
 
 
 def initLegal (env) :
     legals = []
     legalSrcDir = env['CXL_common_dir'] + "/../CodeXL/Setup/Legal"
-    legalSrcFiles = os.listdir(legalSrcDir)
-    for f in legalSrcFiles:
-        legals.append(legalSrcDir+ "/" + f)
+    if os.path.exists(legalSrcDir):
+        legalSrcFiles = os.listdir(legalSrcDir)
+        for f in legalSrcFiles:
+            legals.append(legalSrcDir+ "/" + f)
 
-    legals_install = env.Install(
-        dir = env['CXL_Legal_dir'],
-        source =  legals)
-    env.Append (CXL_Legal_install = legals_install)
+        legals_install = env.Install(
+            dir = env['CXL_Legal_dir'],
+            source =  legals)
+        env.Append (CXL_Legal_install = legals_install)
 
 def initHelp (env) :
     # The doxygen tool utilizes the environment variables:
@@ -273,14 +281,20 @@ def initCpuPerfEventsData (env) :
     for idx in range(len(dataTypes)):
         eventFiles = []
         eventsSrcDir = dataSrcDir + dataTypes[idx]
-        eventsSrcFiles = os.listdir(eventsSrcDir)
-        for f in eventsSrcFiles:
-            eventFiles.append(eventsSrcDir + "/" + f)
+        if os.path.exists(eventsSrcDir):
+            eventsSrcFiles = os.listdir(eventsSrcDir)
+            for f in eventsSrcFiles:
+                eventFiles.append(eventsSrcDir + "/" + f)
 
-        cpuEventsData_install.append(env.Install(
-            dir = env[ dataDstEnvs[idx] ],
-            source = eventFiles))
+            cpuEventsData_install.append(env.Install(
+                dir = env[ dataDstEnvs[idx] ],
+                source = eventFiles))
     env.Append (CXL_CpuEventsData_install = cpuEventsData_install)
+
+def initGPUProfiler (env) :
+    if (env['CXL_gpu_profiler_backend_dir'] == ""):
+        gpuProfilerBackendDir = env['CXL_common_dir'] + "/../CodeXL/Components/GpuProfiling/Backend"
+        env.Append(CXL_gpu_profiler_backend_dir = gpuProfilerBackendDir)
 
 def initCXLBuild (env) :
 
@@ -313,6 +327,7 @@ def initCXLBuild (env) :
     initLegal(env)
     initHelp(env)
     initCpuPerfEventsData(env)
+    initGPUProfiler(env)
 
     # This was an artifact of WxWidgets, and can go away
     # env.Append( CPPDEFINES = ["_FILE_OFFSET_BITS=64", "_LARGE_FILES"])
@@ -342,6 +357,9 @@ def initQt4 (env) :
     cxl_qt_dir += "/CentOS66"
     cxl_qt_dir += "/" + env["CXL_arch"]
     cxl_qt_dir += "/release"
+
+    if not os.path.exists(cxl_qt_dir):
+        return
 
     # TODO: We should be able to specify these dirs
     qt_dir = cxl_qt_dir
@@ -838,7 +856,7 @@ def initCommonLibAmd (env, libNameList) :
                 # the relevant library path.
                 #########################################################################
                 
-                # Check is CommonProjects directory is specified
+                # Check if CommonProjects directory is specified
                 liveProj_dir = env['CXL_commonproj_dir']
                 if (liveProj_dir == ""):
                     print "Error: CXL_commonproj_dir not specified"
