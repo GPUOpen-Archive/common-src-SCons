@@ -220,13 +220,13 @@ def initCompilerFlags (env) :
         linker_base_flags += ' -m32 '
     
     if (env['CXL_build_conf'] == 'PUBLIC'):
-        compiler_base_flags += ' -DGDT_PUBLIC '
+        compiler_base_flags += ' -DAMDT_PUBLIC '
     elif (env['CXL_build_conf'] == 'NDA'):
-        compiler_base_flags += ' -DGDT_NDA '
+        compiler_base_flags += ' -DAMDT_NDA '
     elif (env['CXL_build_conf'] == 'INTERNAL'):
-        compiler_base_flags += ' -DGDT_INTERNAL '
+        compiler_base_flags += ' -DAMDT_INTERNAL '
     else:
-        compiler_base_flags += ' -DGDT_PUBLIC '
+        compiler_base_flags += ' -DAMDT_PUBLIC '
 
     # add the support for HSA
     if (env['CXL_hsa'] == 'true'):
@@ -737,11 +737,11 @@ def initGPSBackend (env):
     env.Append(GPS_debugSuffix = GPS_debugSuffix)
     env.Append(GPS_archConfig = GPS_archConfig)
     
-    GDT_PLATFORM_SUFFIX="-D'GDT_PLATFORM_SUFFIX=\"" + GPS_platformSuffix + "\"'"
-    GDT_BUILD_SUFFIX="-D'GDT_BUILD_SUFFIX=\"" + GPS_buildSuffix + "\"'"
-    GDT_PROJECT_SUFFIX="-D'GDT_PROJECT_SUFFIX=\"" + GPSprojectssuffix + "\"'"
+    AMDT_PLATFORM_SUFFIX="-D'AMDT_PLATFORM_SUFFIX=\"" + GPS_platformSuffix + "\"'"
+    AMDT_BUILD_SUFFIX="-D'AMDT_BUILD_SUFFIX=\"" + GPS_buildSuffix + "\"'"
+    AMDT_PROJECT_SUFFIX="-D'AMDT_PROJECT_SUFFIX=\"" + GPSprojectssuffix + "\"'"
 
-    cpp_flags= ' ' + GDT_PLATFORM_SUFFIX + ' ' + GDT_BUILD_SUFFIX + ' ' + GDT_PROJECT_SUFFIX + ' -DGPS_PLUGIN_STATIC -DGL_FRAME_CAPTURE -DUSE_POINTER_SINGLETON -DGL_GLEXT_PROTOTYPES -DCODEXL_GRAPHICS '
+    cpp_flags= ' ' + AMDT_PLATFORM_SUFFIX + ' ' + AMDT_BUILD_SUFFIX + ' ' + AMDT_PROJECT_SUFFIX + ' -DGPS_PLUGIN_STATIC -DGL_FRAME_CAPTURE -DUSE_POINTER_SINGLETON -DGL_GLEXT_PROTOTYPES -DCODEXL_GRAPHICS '
    
     original_cpp_flag=env['CPPFLAGS']
     original_cpp_flag = original_cpp_flag + cpp_flags
