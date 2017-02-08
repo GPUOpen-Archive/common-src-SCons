@@ -275,7 +275,7 @@ def initHelp (env) :
 def initCpuPerfEventsData (env) :
     dataDstEnvs = [ 'CXL_Events_dir', 'CXL_Profiles_dir', 'CXL_Views_dir' ]
     dataTypes   = [ 'Events/Public' , 'Profiles'        , 'Views'         ]
-    dataSrcDir = env['CXL_common_dir'] + "/Lib/AMD/AMDTCpuPerfEventUtils/1.0/Data/"
+    dataSrcDir = env['CXL_common_dir'] + "/../CodeXL/Components/CpuProfiling/Data/"
 
     cpuEventsData_install = []
     for idx in range(len(dataTypes)):
