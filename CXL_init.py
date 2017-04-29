@@ -664,10 +664,8 @@ def UseAPPSDK (env):
 def UseGPUPerfAPI (env) :
     libGPUPerfAPI_dir     = env['CXL_common_dir'] + '/Lib/AMD/GPUPerfAPI/2_22/'
     libGPUPerfAPI_inc     = libGPUPerfAPI_dir + 'Include/'
-    libGPUPerfAPI_lib_dir = libGPUPerfAPI_dir + 'Bin/Linx64'
 
     env.Append(CPPPATH = [libGPUPerfAPI_inc])
-    env.Append(LIBPATH = [libGPUPerfAPI_lib_dir])
 
 def initjpglib (env) :
     jpglib_dir     = env['CXL_common_dir'] + '/Lib/Ext/jpglib/jpeg-9/'
