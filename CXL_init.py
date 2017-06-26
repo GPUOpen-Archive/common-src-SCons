@@ -626,7 +626,7 @@ def initBoost (env) :
     env.Append(LIBPATH = [boost_lib_dir])
 
 def UseBoost (env):
-    compiler_base_flags = ' -Wno-deprecated-declarations '
+    compiler_base_flags = ' -Wno-deprecated-declarations -Wl,--unresolved-symbols=ignore-in-shared-libs -Wl,--export-dynamic -DBOOST_ALL_NO_LIB -DBOOST_NO_CXX11_NUMERIC_LIMITS '
     env.Append(CPPFLAGS = compiler_base_flags)
     if (env['CXL_boost_include_dir'] == ''):
       boost_include_dir =  env['CXL_common_dir'] + '/Lib/Ext/Boost/boost_1_59_0'
