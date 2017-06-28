@@ -662,7 +662,7 @@ def UseAPPSDK (env):
     env.Append(CPPPATH = [amdAPPSDK_dir])
 
 def UseGPUPerfAPI (env) :
-    libGPUPerfAPI_dir     = env['CXL_common_dir'] + '/Lib/AMD/GPUPerfAPI/2_22/'
+    libGPUPerfAPI_dir     = env['CXL_common_dir'] + '/Lib/AMD/GPUPerfAPI/2_23/'
     libGPUPerfAPI_inc     = libGPUPerfAPI_dir + 'Include/'
 
     env.Append(CPPPATH = [libGPUPerfAPI_inc])
