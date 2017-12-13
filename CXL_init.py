@@ -633,7 +633,7 @@ def UseBoost (env):
     else: 
       boost_include_dir =  env['CXL_boost_include_dir']
     
-    env.Append(CPPPATH = [boost_include_dir])
+    env.Append(CPPPATH = ('-isystem', [boost_include_dir]))
 
 def UseFltk (env):
     amdfltk_dir =  env['CXL_common_dir'] + '/Lib/Ext/fltk/1.1.0/'
