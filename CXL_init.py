@@ -11,6 +11,8 @@ import platform
 def initCXLVars (CXL_vars) :
     try:
         sys.path.append("/usr/lib/scons/SCons/Variables/")
+        sys.path.append("/usr/lib/python2.7/site-packages/SCons/Variables/")
+        sys.path.append("/usr/lib/python3/site-packages/SCons/Variables/")
         enum_mod = __import__("EnumVariable")
     except ImportError:
         print "Error: Could not import EnumVariable"
