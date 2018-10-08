@@ -211,6 +211,11 @@ def initInstallDirs (env) :
 def initCompilerFlags (env) :
     compiler_base_flags = " -Wall -Werror -Wextra -g -fmessage-length=0 -Wno-unknown-pragmas -pthread -std=c++11 -D_LINUX"    
     linker_base_flags = ''
+
+    if StrictVersion(env['CXXVERSION']) > StrictVersion('7.0.0'):
+        compiler_base_flags += ' -Wno-expansion-to-defined '
+        compiler_base_flags += ' -Wno-ignored-attributes '
+        compiler_base_flags += ' -Wno-implicit-fallthrough '
     
     if (env['CXL_build'] == 'debug'):
         compiler_base_flags += ' -D_DEBUG '
@@ -264,6 +269,17 @@ def initLegal (env) :
             dir = env['CXL_Legal_dir'],
             source =  legals)
         env.Append (CXL_Legal_install = legals_install)
+
+def initReleaseDocs(env) :
+    setupDir = env['CXL_common_dir'] + "/../CodeXL/Setup"
+    releaseDocs = []
+    releaseDocs.append(setupDir+ "/Legal/Readme.txt")
+    releaseDocs.append(setupDir+ "/CodeXL_Release_Notes.pdf")
+
+    releaseDocs_install = env.Install(
+        dir = env['CXL_install_dir'],
+        source = releaseDocs)
+    env.Append (CXL_ReleaseDocs_install = releaseDocs_install)
 
 def initHelp (env) :
     # The doxygen tool utilizes the environment variables:
@@ -327,6 +343,7 @@ def initCXLBuild (env) :
     initInstallDirs(env)
     initImages (env)
     initLegal(env)
+    initReleaseDocs(env)
     initHelp(env)
     initCpuPerfEventsData(env)
     initGPUProfiler(env)
@@ -354,10 +371,10 @@ def copySharedLibrary ( env, sym, srcDir, destDir ):
 def initQt4 (env) :
     # TODO: This will need to change for Ubuntu
     # Example: Common/Lib/Ext/Qt/4.7.4/Build/CentOS6.2/x86_64/debug
-    cxl_qt_dir = env['CXL_common_dir'] + "/Lib/Ext/Qt/5.5"
+    base_cxl_qt_dir = env['CXL_common_dir'] + "/Lib/Ext/Qt/5.9"
+    cxl_qt_dir = base_cxl_qt_dir
     cxl_qt_dir += "/Build"
-    cxl_qt_dir += "/CentOS66"
-    cxl_qt_dir += "/" + env["CXL_arch"]
+    cxl_qt_dir += "/Linux"
     cxl_qt_dir += "/release"
 
     if not os.path.exists(cxl_qt_dir):
@@ -369,10 +386,14 @@ def initQt4 (env) :
     qt_lib_dir = qt_dir + "/lib"
     qt_bin_dir = qt_dir + "/bin"
     qt_platforms_dir = qt_dir + "/plugins/platforms"
+    qt_libexec_dir = qt_dir + "/libexec"
+    qt_resources_dir = base_cxl_qt_dir + "/resources"
+    qt_translations_dir = base_cxl_qt_dir + "/translations/qtwebengine_locales"
+    qt_plugins_dir = qt_dir + "/plugins"
 
     # This is the base list of qt module needed for CodeXL
     # TODO: We should allow user to add to the list
-    qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network', 'Qt5WebKit','Qt5Widgets','Qt5WebKitWidgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa')
+    qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network','Qt5Widgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa','Qt5WebEngine','Qt5WebEngineWidgets')
     qt_module_list = qt_base_module_list    
 
     qt_inc_path  = [
@@ -402,8 +423,19 @@ def initQt4 (env) :
             copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
             ## Add addtioanl copy to output folder in order to bypass GCC 5.3 issue ignoring LIB_PATH
             copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir'])
+        tmp = re.match( "lib" + "Qt5QuickWidgets*", file)
+        if tmp:
+            copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
+        tmp = re.match( "lib" + "Qt5WebEngineCore*", file)
+        if tmp:
+            copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
     qt_extra_libs = ('icui18n','icuuc','icudata')
     qt_libs.append(qt_extra_libs)
+
+    # Copy extra files needed for QtWebEngine
+    shutil.copy(qt_libexec_dir + "/QtWebEngineProcess", env['CXL_lib_dir'])
+    shutil.copy(qt_bin_dir + "/qwebengine_convert_dict", env['CXL_lib_dir'])
+    shutil.copy(qt_bin_dir + "/qt.conf", env['CXL_lib_dir'])
 
     # Create a seperate collection of Qt modules that non-graphics apps such as the command line tools can safely link to.
     qt_libs_no_graphics =[]
@@ -424,6 +456,25 @@ def initQt4 (env) :
         os.makedirs(env['CXL_lib_dir'] + "/platforms")
 
     copySharedLibrary(env, qtxcd_file, qt_platforms_dir, env['CXL_lib_dir'] + "/platforms")
+
+    if not os.path.exists(env['CXL_lib_dir'] + "/resources"):
+        os.makedirs(env['CXL_lib_dir'] + "/resources")
+
+    shutil.copy(qt_resources_dir + "/icudtl.dat", env['CXL_lib_dir'] + "/resources")
+    shutil.copy(qt_resources_dir + "/qtwebengine_resources.pak", env['CXL_lib_dir'] + "/resources")
+    shutil.copy(qt_resources_dir + "/qtwebengine_devtools_resources.pak", env['CXL_lib_dir'] + "/resources")
+    shutil.copy(qt_resources_dir + "/qtwebengine_resources_100p.pak", env['CXL_lib_dir'] + "/resources")
+    shutil.copy(qt_resources_dir + "/qtwebengine_resources_200p.pak", env['CXL_lib_dir'] + "/resources")
+
+    if os.path.exists(env['CXL_lib_dir'] + "/qtwebengine_locales"):
+        shutil.rmtree(env['CXL_lib_dir'] + "/qtwebengine_locales")
+    shutil.copytree(qt_translations_dir, env['CXL_lib_dir'] + "/qtwebengine_locales")
+
+    if not os.path.exists(env['CXL_lib_dir'] + "/plugins"):
+        os.makedirs(env['CXL_lib_dir'] + "/plugins")
+        os.makedirs(env['CXL_lib_dir'] + "/plugins" + "/xcbglintegrations")
+    shutil.copy(qt_plugins_dir + "/xcbglintegrations/libqxcb-egl-integration.so", env['CXL_lib_dir'] + "/plugins/xcbglintegrations")
+    shutil.copy(qt_plugins_dir + "/xcbglintegrations/libqxcb-glx-integration.so", env['CXL_lib_dir'] + "/plugins/xcbglintegrations")
 
     env.Append(CXL_qt_dir = qt_dir)
     env.Append(CXL_qt_def = qt_define_list)
@@ -474,7 +525,9 @@ from distutils.version import StrictVersion
 
 def initStdc(env):
     stdclib_dir = env['CXL_common_dir'] + '/Lib/Ext/libstdc/6.0.16/CentOS64/'
-    if StrictVersion(env['CXXVERSION']) > StrictVersion('5.0.0'):
+    if StrictVersion(env['CXXVERSION']) > StrictVersion('7.0.0'):
+        stdclib_dir = env['CXL_common_dir'] + '/Lib/Ext/libstdc/6.0.25/CentOS64/'
+    elif StrictVersion(env['CXXVERSION']) > StrictVersion('5.0.0'):
         stdclib_dir = env['CXL_common_dir'] + '/Lib/Ext/libstdc/6.0.21/CentOS64/'
     elif StrictVersion(env['CXXVERSION']) > StrictVersion('4.8.5'):
         stdclib_dir = env['CXL_common_dir'] + '/Lib/Ext/libstdc/6.0.20/CentOS64/'
@@ -664,7 +717,7 @@ def UseAPPSDK (env):
     env.Append(CPPPATH = [amdAPPSDK_dir])
 
 def UseGPUPerfAPI (env) :
-    libGPUPerfAPI_dir     = env['CXL_common_dir'] + '/Lib/AMD/GPUPerfAPI/2_23/'
+    libGPUPerfAPI_dir     = env['CXL_common_dir'] + '/Lib/AMD/GPUPerfAPI/3_1/'
     libGPUPerfAPI_inc     = libGPUPerfAPI_dir + 'Include/'
 
     env.Append(CPPPATH = [libGPUPerfAPI_inc])
