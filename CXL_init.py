@@ -1,11 +1,11 @@
-import re 
+import re
 import shutil
 import os
 import sys
 import platform
 
 #
-# This file contains CXL specific initializations 
+# This file contains CXL specific initializations
 #
 
 def initCXLVars (CXL_vars) :
@@ -90,6 +90,12 @@ def initCXLVars (CXL_vars) :
         help = 'Specify Boost headers directory to use',
         default = '',)
 
+    # CxL support for installed Qt
+    CXL_vars.Add(
+        key = 'CXL_qt_dir',
+        help = 'Specify base Qt directory to use',
+        default = '',)
+
     # Support for specifying location of GPU Profiler Backend
     CXL_vars.Add(
         key = 'CXL_gpu_profiler_backend_dir',
@@ -127,31 +133,31 @@ def initOs (env) :
 def initDistro (env) :
     if (env["CXL_os"] == "Linux"):
         if os.path.exists("/etc/SuSE-release"):
-            env.Append (CXL_distro = "SuSE")    
+            env.Append (CXL_distro = "SuSE")
         elif os.path.exists("/etc/redhat-release"):
-            env.Append (CXL_distro = "Redhat")    
+            env.Append (CXL_distro = "Redhat")
         elif os.path.exists("/etc/lsb-release"):
             lsb_file = open("/etc/lsb-release")
             distro_id = lsb_file.readline().split("=")
             if (distro_id[1] == "Ubuntu"):
-                env.Append (CXL_distro = "Ubuntu")    
+                env.Append (CXL_distro = "Ubuntu")
         else:
-            env.Append (CXL_distro = "Unknown")    
+            env.Append (CXL_distro = "Unknown")
 
 
 def initInstallDirs (env) :
 
     # Current CodeXL staging
-    install_dir = env['CXL_prefix'] 
+    install_dir = env['CXL_prefix']
     install_dir += '/Output_' + env['CXL_arch']
-    install_dir += '/' + env['CXL_build'] 
+    install_dir += '/' + env['CXL_build']
     install_dir += '/bin'
     env.Append (CXL_install_dir = install_dir)
 
     env.Append (CXL_bin_dir = install_dir)
     if not os.path.exists(env['CXL_bin_dir']):
         os.makedirs(env['CXL_bin_dir'])
-    
+
     env.Append (CXL_lib_dir = install_dir)
     if not os.path.exists(env['CXL_lib_dir']):
         os.makedirs(env['CXL_lib_dir'])
@@ -209,14 +215,14 @@ def initInstallDirs (env) :
     env['ENV']['CXL_webhelp_dir'] = env['CXL_webhelp_dir']
 
 def initCompilerFlags (env) :
-    compiler_base_flags = " -Wall -Werror -Wextra -g -fmessage-length=0 -Wno-unknown-pragmas -pthread -std=c++11 -D_LINUX"    
+    compiler_base_flags = " -Wall -Werror -Wextra -g -fmessage-length=0 -Wno-unknown-pragmas -pthread -std=c++11 -D_LINUX"
     linker_base_flags = ''
 
     if StrictVersion(env['CXXVERSION']) > StrictVersion('7.0.0'):
         compiler_base_flags += ' -Wno-expansion-to-defined '
         compiler_base_flags += ' -Wno-ignored-attributes '
         compiler_base_flags += ' -Wno-implicit-fallthrough '
-    
+
     if (env['CXL_build'] == 'debug'):
         compiler_base_flags += ' -D_DEBUG '
     else:
@@ -225,7 +231,7 @@ def initCompilerFlags (env) :
     if (env['CXL_bitness'] == '32'):
         compiler_base_flags += ' -m32 '
         linker_base_flags += ' -m32 '
-    
+
     if (env['CXL_build_conf'] == 'PUBLIC'):
         compiler_base_flags += ' -DAMDT_PUBLIC '
     elif (env['CXL_build_conf'] == 'NDA'):
@@ -242,7 +248,7 @@ def initCompilerFlags (env) :
     env.Prepend(CPPFLAGS = compiler_base_flags)
     env.Prepend(LINKFLAGS = linker_base_flags)
 
-    
+
 def initImages (env) :
     images = []
     imgSrcDir = env['CXL_common_dir'] + "/../CodeXL/Images"
@@ -316,7 +322,7 @@ def initGPUProfiler (env) :
 
 def initCXLBuild (env) :
 
-    # Use CXL_common_dir from system environment variable 
+    # Use CXL_common_dir from system environment variable
     # if specified and not given as SConstruct variable.
     try:
         tmp = os.environ['CXL_common_dir']
@@ -353,7 +359,7 @@ def initCXLBuild (env) :
 
 
 def copySharedLibrary ( env, sym, srcDir, destDir ):
-    src = srcDir + "/" + sym 
+    src = srcDir + "/" + sym
     if os.path.islink(src):
         linkto = os.readlink(src)
         if env['CXL_build_verbose'] != 0 :
@@ -369,37 +375,48 @@ def copySharedLibrary ( env, sym, srcDir, destDir ):
                 print ("Copying    : " + sym)
 
 def initQt4 (env) :
-    # TODO: This will need to change for Ubuntu
-    # Example: Common/Lib/Ext/Qt/4.7.4/Build/CentOS6.2/x86_64/debug
-    base_cxl_qt_dir = env['CXL_common_dir'] + "/Lib/Ext/Qt/5.9"
-    cxl_qt_dir = base_cxl_qt_dir
-    cxl_qt_dir += "/Build"
-    cxl_qt_dir += "/Linux"
-    cxl_qt_dir += "/release"
+    if (env['CXL_qt_dir'] == ''):
+        home = os.path.expanduser("~")
+        base_cxl_qt_dir = home + "/Qt5.9.5/5.9.5/gcc_64"
+        alt_base_cxl_qt_dir = "/opt/Qt/Qt5.9.5/5.9.5/gcc_64"
+        if not os.path.exists(base_cxl_qt_dir):
+            if os.path.exists(alt_base_cxl_qt_dir):
+                base_cxl_qt_dir = alt_base_cxl_qt_dir
+            else:
+                print ("Unable to find Qt installation in: " + base_cxl_qt_dir)
+                print ("Unable to find Qt installation in: " + alt_base_cxl_qt_dir)
+                print ("Please specify the location of the Qt directory with the 'CXL_qt_dir=<dir location>' parameter")
+                return
+    else:
+        base_cxl_qt_dir = env['CXL_qt_dir']
+        if not os.path.exists(base_cxl_qt_dir):
+            print ("Unable to find Qt installation in: " + base_cxl_qt_dir)
+            return
 
-    if not os.path.exists(cxl_qt_dir):
-        return
+    cxl_qt_dir = base_cxl_qt_dir
 
     # TODO: We should be able to specify these dirs
     qt_dir = cxl_qt_dir
     qt_inc_dir = qt_dir + "/include"
     qt_lib_dir = qt_dir + "/lib"
     qt_bin_dir = qt_dir + "/bin"
-    qt_platforms_dir = qt_dir + "/plugins/platforms"
-    qt_libexec_dir = qt_dir + "/libexec"
-    qt_resources_dir = base_cxl_qt_dir + "/resources"
-    qt_translations_dir = base_cxl_qt_dir + "/translations/qtwebengine_locales"
     qt_plugins_dir = qt_dir + "/plugins"
+    qt_platforms_dir = qt_plugins_dir + "/platforms"
+    qt_libexec_dir = qt_dir + "/libexec"
+    qt_resources_dir = qt_dir + "/resources"
+    qt_translations_dir = qt_dir + "/translations/qtwebengine_locales"
+    qt_src_dir = env['CXL_common_dir'] + "/Src/Qt"
 
     # This is the base list of qt module needed for CodeXL
     # TODO: We should allow user to add to the list
     qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network','Qt5Widgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa','Qt5WebEngine','Qt5WebEngineWidgets')
-    qt_module_list = qt_base_module_list    
+    qt_module_list = qt_base_module_list
 
     qt_inc_path  = [
-        qt_inc_dir, 
+        qt_src_dir,
+        qt_inc_dir,
         qt_inc_dir + "/Qt"]
-    qt_libs =[] 
+    qt_libs =[]
     dbgSuffix = ''
     for qtmod in qt_module_list:
 
@@ -413,8 +430,8 @@ def initQt4 (env) :
             if tmp:
                 if not os.path.exists(env['CXL_lib_dir'] + "/RuntimeLibs/QT"):
                     os.makedirs(env['CXL_lib_dir'] + "/RuntimeLibs/QT")
-                copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT") 
-    
+                copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
+
     # added libraries needed for Q5.3 25-may-2014
     files = os.listdir(qt_lib_dir)
     for file in files:
@@ -435,7 +452,7 @@ def initQt4 (env) :
     # Copy extra files needed for QtWebEngine
     shutil.copy(qt_libexec_dir + "/QtWebEngineProcess", env['CXL_lib_dir'])
     shutil.copy(qt_bin_dir + "/qwebengine_convert_dict", env['CXL_lib_dir'])
-    shutil.copy(qt_bin_dir + "/qt.conf", env['CXL_lib_dir'])
+    shutil.copy(qt_src_dir + "/linux/qt.conf", env['CXL_lib_dir'])
 
     # Create a seperate collection of Qt modules that non-graphics apps such as the command line tools can safely link to.
     qt_libs_no_graphics =[]
@@ -488,7 +505,7 @@ def initQt4 (env) :
     env.Append(CXL_Qt4_libdir = qt_lib_dir)
 
 # Call the initQt4 routine to perform the setup, and 'install' of the Qt libraries
-    
+
 # and call UseQt4 to add it to the local environment
 def UseQt4(env):
     env.Append( CPPDEFINES = env['CXL_Qt4_define_list'] )
@@ -535,10 +552,10 @@ def initStdc(env):
         stdclib_dir = env['CXL_common_dir'] + '/Lib/Ext/libstdc/6.0.19/CentOS64/'
     stdclib_lib = stdclib_dir + env['CXL_arch']
     for file in os.listdir(stdclib_lib):
-        copySharedLibrary(env, file, stdclib_lib, env['CXL_lib_dir']) 
-        
+        copySharedLibrary(env, file, stdclib_lib, env['CXL_lib_dir'])
+
 def initTinyXml (env) :
-    dbgSuffix = '' 
+    dbgSuffix = ''
 
     tinyxml_dir = env['CXL_common_dir'] + '/Lib/Ext/tinyxml/2.6.2'
     tinyxml_inc = tinyxml_dir
@@ -562,13 +579,13 @@ def initQScintilla (env) :
     qscintilla_inc = [qscintilla_dir + "/Qt4Qt5"]
     qscintilla_lib = qscintilla_dir + '/lib/linux/CentOS66' + '/' + env['CXL_arch'] + '/'
     libsrc = []
-    
+
     for file in os.listdir(qscintilla_lib):
         libsrc.append(qscintilla_lib + "/" + file)
         # Copy the shared libs and symlinks to the install location
         tmp = re.match( "^libqscintilla" + ".so", file)
         if tmp:
-            copySharedLibrary(env, file, qscintilla_lib, env['CXL_lib_dir']) 
+            copySharedLibrary(env, file, qscintilla_lib, env['CXL_lib_dir'])
 
     env.Append(CXL_QSci_inc = qscintilla_inc)
     env.Append(CXL_QSci_libs = 'qscintilla')
@@ -589,14 +606,14 @@ def initQCustomPlot (env) :
     qcustomplot_dir = env['CXL_common_dir'] + '/Lib/Ext/qcustomplot/1.3.1'
     qcustomplot_inc = qcustomplot_dir + '/include'
     qcustomplot_lib = qcustomplot_dir + '/lib/linux/' + env['CXL_build'] + '/'
-    qcustomplot_libs = ['qcustomplot' + dbgSuffix] 
+    qcustomplot_libs = ['qcustomplot' + dbgSuffix]
 
     for file in os.listdir(qcustomplot_lib):
         libsrc.append(qcustomplot_lib + "/" + file)
         # Copy the shared libs and symlinks to the install location
         tmp = re.match( "^libqcustomplot" + dbgSuffix + ".so", file)
         if tmp:
-            copySharedLibrary(env, file, qcustomplot_lib, env['CXL_lib_dir']) 
+            copySharedLibrary(env, file, qcustomplot_lib, env['CXL_lib_dir'])
 
     env.Append(CXL_QCustomPlot_inc = [qcustomplot_inc])
     env.Append(CXL_QCustomPlot_libs = qcustomplot_libs)
@@ -645,7 +662,7 @@ def initAMDOpenCL (env) :
         amdopencl_lib = amdopencl_dir + '/x86'
         file = 'libAMDOpenCLDebugAPI32' + dbgSuffix + ".so"
 
-    copySharedLibrary(env, file, amdopencl_lib, env['CXL_lib_dir']) 
+    copySharedLibrary(env, file, amdopencl_lib, env['CXL_lib_dir'])
 
 def initGLEW (env) :
     amdglew_dir =  env['CXL_common_dir'] + '/Lib/Ext/glew/1.9.0/Build/Ubuntu'
@@ -655,14 +672,14 @@ def initGLEW (env) :
     else:
         amdglew_dir = amdglew_dir + '/x86/'
 
-    copySharedLibrary(env, "libGLEW.so.1.9.0", amdglew_dir, env['CXL_lib_dir']) 
-    copySharedLibrary(env, "libGLEW.so.1.9", amdglew_dir, env['CXL_lib_dir']) 
-    copySharedLibrary(env, "libGLEW.so", amdglew_dir, env['CXL_lib_dir']) 
+    copySharedLibrary(env, "libGLEW.so.1.9.0", amdglew_dir, env['CXL_lib_dir'])
+    copySharedLibrary(env, "libGLEW.so.1.9", amdglew_dir, env['CXL_lib_dir'])
+    copySharedLibrary(env, "libGLEW.so", amdglew_dir, env['CXL_lib_dir'])
 
 def initBoost (env) :
     if (env['CXL_boost_lib_dir'] == ''):
       boost_lib_dir =  env['CXL_common_dir'] + '/Lib/Ext/Boost/boost_1_59_0/lib/RHEL6'
-  
+
       if (env['CXL_arch'] == 'x86_64'):
         boost_lib_dir = boost_lib_dir + '/x86_64/'
         shutil.copy2(boost_lib_dir + "libboost_system.so.1.59.0", env['CXL_lib_dir'] + "/libboost_system.so.1.59.0")
@@ -685,9 +702,9 @@ def UseBoost (env):
     env.Append(CPPFLAGS = compiler_base_flags)
     if (env['CXL_boost_include_dir'] == ''):
       boost_include_dir =  env['CXL_common_dir'] + '/Lib/Ext/Boost/boost_1_59_0'
-    else: 
+    else:
       boost_include_dir =  env['CXL_boost_include_dir']
-    
+
     env.Append(CPPPATH = ('-isystem', [boost_include_dir]))
 
 def UseFltk (env):
@@ -702,7 +719,7 @@ def initAMDTQTControls(env):
     amdtQtControls_inc     = amdtQtControls_dir + 'Include'
     amdtQtControls_libpath = amdtQtControls_dir + 'Build/CentOS64/' + env['CXL_arch'] + '/' + env['CXL_build']
     amdtQtControls_libs    = "libAMDTQtControls"
-    copySharedLibrary(env, amdtQtControls_libs + '.so', amdtQtControls_libpath, env['CXL_lib_dir']) 
+    copySharedLibrary(env, amdtQtControls_libs + '.so', amdtQtControls_libpath, env['CXL_lib_dir'])
     env.Append(CXL_amdtQtControls_inc = amdtQtControls_inc)
     env.Append(CXL_amdtQtControls_libs = amdtQtControls_libs)
     env.Append(CXL_amdtQtControls_libpath = amdtQtControls_libpath)
@@ -767,7 +784,7 @@ def initGPSBackend (env):
         GPS_archConfig = 'x86'
         GPS_platformSuffix = "32"
         env.archLinux = '32'
-    else: 
+    else:
         GPS_archConfig = 'x86_64'
         env.archWin = '-x64'
 
@@ -776,10 +793,10 @@ def initGPSBackend (env):
         GPS_buildSuffix = "-Internal"
     else:
         GPS_buildInternal = False
-    
-    
+
+
     GPSprojectssuffix=GPS_platformSuffix+GPS_debugSuffix + GPS_buildSuffix
-    
+
     env.Append(CommonPath = env['CXL_common_dir'])
     env.Append(projectName = "CXLGraphicsServer")
     env.Append(capturePlayerName = "CXLGraphicsServerPlayer")
@@ -789,16 +806,16 @@ def initGPSBackend (env):
     env.Append(GPS_buildSuffix = GPS_buildSuffix)
     env.Append(GPS_debugSuffix = GPS_debugSuffix)
     env.Append(GPS_archConfig = GPS_archConfig)
-    
+
     AMDT_PLATFORM_SUFFIX="-D'AMDT_PLATFORM_SUFFIX=\"" + GPS_platformSuffix + "\"'"
     AMDT_BUILD_SUFFIX="-D'AMDT_BUILD_SUFFIX=\"" + GPS_buildSuffix + "\"'"
     AMDT_PROJECT_SUFFIX="-D'AMDT_PROJECT_SUFFIX=\"" + GPSprojectssuffix + "\"'"
 
     cpp_flags= ' ' + AMDT_PLATFORM_SUFFIX + ' ' + AMDT_BUILD_SUFFIX + ' ' + AMDT_PROJECT_SUFFIX + ' -DGPS_PLUGIN_STATIC -DGL_FRAME_CAPTURE -DUSE_POINTER_SINGLETON -DGL_GLEXT_PROTOTYPES -DCODEXL_GRAPHICS '
-   
+
     original_cpp_flag=env['CPPFLAGS']
     original_cpp_flag = original_cpp_flag + cpp_flags
-    env.Replace(CPPFLAGS = original_cpp_flag) 
+    env.Replace(CPPFLAGS = original_cpp_flag)
 
 ##########################################################################################
 # Copy JSON files required by the Vulkan server
@@ -833,7 +850,7 @@ def CopyJSON(env):
 
     # prepend "lib" to "name"
     command = "sed -i 's/name\": \"/name\": \"lib/g' " + dest
-    os.system(command) 
+    os.system(command)
 
     # replace 'dll' with 'so'
     command = "sed -i 's/dll/so/g' " + dest
@@ -885,9 +902,9 @@ def initCommonLibAmd (env, libNameList) :
     if (env['CXL_common_dir'] == ""):
         return
 
-    common_inc_path = [] 
-    common_lib_path = [] 
-    common_libs     = [] 
+    common_inc_path = []
+    common_lib_path = []
+    common_libs     = []
     for libName in libNameList:
         mod_path = env['CXL_common_dir'] + "/Lib/AMD" + "/" +libName
 
@@ -900,15 +917,15 @@ def initCommonLibAmd (env, libNameList) :
             exit (1)
         else:
             if (import_mod.VER.lower() == "live"):
-                
+
                 #########################################################################
                 # LIVE MODEL :
                 # If the versioning is "live" (case insensitive)
-                # The module will be built from the CommonProject. 
+                # The module will be built from the CommonProject.
                 # It is the responsibility of the caller to deal with any exceptions and
                 # the relevant library path.
                 #########################################################################
-                
+
                 # Check if CommonProjects directory is specified
                 liveProj_dir = env['CXL_commonproj_dir']
                 if (liveProj_dir == ""):
@@ -936,15 +953,15 @@ def initCommonLibAmd (env, libNameList) :
 
                 if ( hasattr(import_mod, 'DATA_SRC') ) and ( hasattr(import_mod, 'DATA_DST') ) :
                     if import_mod.DATA_SRC != "":
-                        src = liveProj_dir + "/" + import_mod.DATA_SRC 
-                        dst = env['CXL_Data_dir'] + "/" + import_mod.DATA_DST 
+                        src = liveProj_dir + "/" + import_mod.DATA_SRC
+                        dst = env['CXL_Data_dir'] + "/" + import_mod.DATA_DST
                         if  os.path.exists(dst):
                             shutil.rmtree (dst)
                         shutil.copytree(src, dst, symlinks = True)
-            else: 
+            else:
                 #########################################################################
                 # PROMOTION MODEL :
-                # Use the already built binaries in the Common directory specified by 
+                # Use the already built binaries in the Common directory specified by
                 # version number
                 #########################################################################
 
@@ -988,7 +1005,7 @@ def initCommonLibAmd (env, libNameList) :
                     lib_path = ver_dir + "/" + valueItem
                     common_lib_path.append (lib_path)
 
-                # Copy libraries (file/symlink) to the installation directory    
+                # Copy libraries (file/symlink) to the installation directory
                 # But not archives - leave them
                 files = os.listdir(lib_path)
                 if (hasattr(import_mod, 'COPY_LIBS')):
@@ -1030,7 +1047,7 @@ def initCommonProjects (env, ProjNameList) :
     if (env['CXL_common_dir'] == ""):
         print "Error: CXL_common_dir not specified"
         return
-    
+
     if (env['CXL_commonproj_dir'] == ""):
         print "Error: CXL_commonproj_dir not specified"
         return
