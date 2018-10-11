@@ -378,15 +378,19 @@ def initQt4 (env) :
     if (env['CXL_qt_dir'] == ''):
         home = os.path.expanduser("~")
         base_cxl_qt_dir = home + "/Qt5.9.5/5.9.5/gcc_64"
-        alt_base_cxl_qt_dir = "/opt/Qt/Qt5.9.5/5.9.5/gcc_64"
+        alt_base_cxl_qt_dir = "/opt/Qt5.9.5/5.9.5/gcc_64"
+        nondefault_base_cxl_qt_dir = "/opt/Qt/Qt5.9.5/5.9.5/gcc_64"
         if not os.path.exists(base_cxl_qt_dir):
-            if os.path.exists(alt_base_cxl_qt_dir):
-                base_cxl_qt_dir = alt_base_cxl_qt_dir
+            if not os.path.exists(alt_base_cxl_qt_dir):
+                if os.path.exists(nondefault_base_cxl_qt_dir):
+                    base_cxl_qt_dir = nondefault_base_cxl_qt_dir
+                else:
+                    print ("Unable to find Qt installation in: " + base_cxl_qt_dir)
+                    print ("Unable to find Qt installation in: " + alt_base_cxl_qt_dir)
+                    print ("Please specify the location of the Qt directory with the 'CXL_qt_dir=<dir location>' parameter")
+                    return
             else:
-                print ("Unable to find Qt installation in: " + base_cxl_qt_dir)
-                print ("Unable to find Qt installation in: " + alt_base_cxl_qt_dir)
-                print ("Please specify the location of the Qt directory with the 'CXL_qt_dir=<dir location>' parameter")
-                return
+                base_cxl_qt_dir = alt_base_cxl_qt_dir
     else:
         base_cxl_qt_dir = env['CXL_qt_dir']
         if not os.path.exists(base_cxl_qt_dir):
