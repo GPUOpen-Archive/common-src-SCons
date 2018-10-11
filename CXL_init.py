@@ -218,7 +218,7 @@ def initCompilerFlags (env) :
     compiler_base_flags = " -Wall -Werror -Wextra -g -fmessage-length=0 -Wno-unknown-pragmas -pthread -std=c++11 -D_LINUX"
     linker_base_flags = ''
 
-    if StrictVersion(env['CXXVERSION']) > StrictVersion('7.0.0'):
+    if StrictVersion(env['CXXVERSION']) > StrictVersion('6.0.0'):
         compiler_base_flags += ' -Wno-expansion-to-defined '
         compiler_base_flags += ' -Wno-ignored-attributes '
         compiler_base_flags += ' -Wno-implicit-fallthrough '
@@ -409,7 +409,7 @@ def initQt4 (env) :
 
     # This is the base list of qt module needed for CodeXL
     # TODO: We should allow user to add to the list
-    qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network','Qt5Widgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa','Qt5WebEngine','Qt5WebEngineWidgets')
+    qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network','Qt5Widgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa','Qt5WebEngine','Qt5WebEngineCore','Qt5WebEngineWidgets')
     qt_module_list = qt_base_module_list
 
     qt_inc_path  = [
@@ -441,9 +441,6 @@ def initQt4 (env) :
             ## Add addtioanl copy to output folder in order to bypass GCC 5.3 issue ignoring LIB_PATH
             copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir'])
         tmp = re.match( "lib" + "Qt5QuickWidgets*", file)
-        if tmp:
-            copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
-        tmp = re.match( "lib" + "Qt5WebEngineCore*", file)
         if tmp:
             copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
     qt_extra_libs = ('icui18n','icuuc','icudata')
