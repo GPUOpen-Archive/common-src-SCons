@@ -413,7 +413,7 @@ def initQt4 (env) :
 
     # This is the base list of qt module needed for CodeXL
     # TODO: We should allow user to add to the list
-    qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network','Qt5Widgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa','Qt5WebEngine','Qt5WebEngineCore','Qt5WebEngineWidgets')
+    qt_base_module_list = ('Qt5Core', 'Qt5Gui', 'Qt5Xml', 'Qt5OpenGL', 'Qt5Network','Qt5Widgets','Qt5QuickWidgets','Qt5MultimediaWidgets','Qt5Positioning','Qt5PrintSupport','Qt5Multimedia','Qt5Sensors','Qt5Sql','Qt5Quick','Qt5Qml','Qt5DBus','Qt5WebChannel','Qt5XcbQpa','Qt5WebEngine','Qt5WebEngineCore','Qt5WebEngineWidgets')
     qt_module_list = qt_base_module_list
 
     qt_inc_path  = [
@@ -444,9 +444,6 @@ def initQt4 (env) :
             copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
             ## Add addtioanl copy to output folder in order to bypass GCC 5.3 issue ignoring LIB_PATH
             copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir'])
-        tmp = re.match( "lib" + "Qt5QuickWidgets*", file)
-        if tmp:
-            copySharedLibrary(env, file, qt_lib_dir, env['CXL_lib_dir']+ "/RuntimeLibs/QT")
     qt_extra_libs = ('icui18n','icuuc','icudata')
     qt_libs.append(qt_extra_libs)
 
