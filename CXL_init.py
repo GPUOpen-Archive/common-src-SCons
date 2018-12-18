@@ -228,6 +228,9 @@ def initCompilerFlags (env) :
     else:
         compiler_base_flags += ' -O3 -DNDEBUG '
 
+    if (env['CXL_build_type'] == 'static'):
+        compiler_base_flags += ' -fvisibility=hidden -Wno-maybe-uninitialized '
+
     if (env['CXL_bitness'] == '32'):
         compiler_base_flags += ' -m32 '
         linker_base_flags += ' -m32 '
